@@ -1,0 +1,99 @@
+<!doctype html>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html;charset=UTF-8" />
+	<script type="text/javascript" src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+	<script type="text/javascript" src="https://kazuhikoarase.github.io/simcirjs/simcir.js"></script>
+	<link rel="stylesheet" type="text/css" href="https://kazuhikoarase.github.io/simcirjs/simcir.css" />
+	<script type="text/javascript" src="https://kazuhikoarase.github.io/simcirjs/simcir-basicset.js"></script>
+	<link rel="stylesheet" type="text/css" href="https://kazuhikoarase.github.io/simcirjs/simcir-basicset.css" />
+	<script type="text/javascript" src="https://kazuhikoarase.github.io/simcirjs/simcir-library.js"></script>
+	<script src="https://html2canvas.hertzen.com/dist/html2canvas.js"></script>
+
+	<script type="text/javascript">
+	$(function() {
+		let $s = simcir;
+		let $simcir = $("#simcir_canvas");
+
+		let getCircuitData = function() {
+			return $s.controller( $simcir.find(".simcir-workspace") ).text();
+		};
+
+		let setup = function(data) {
+			$s.setupSimcir($simcir, $.extend(data));
+		};
+
+		$("#simcir-set-json").change( (event) => {
+			let file = event.target.files;
+			let reader = new FileReader();
+			reader.readAsText(file[0]);
+			reader.onload = function(ev){
+				let circuit = {};
+				$.each(JSON.parse(reader.result), function(k, v) {
+					if (k == "width" || k == "height" || k == "toolbox" || k == "devices" || k == "connectors") {
+						circuit[k] = v;
+					}
+				});
+				setup(circuit);
+			}
+		});
+
+		$("#simcir-get-json").click( () => {
+			let newData = getCircuitData();
+			let bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+			let blob = new Blob([bom, newData], { type: "text/plain" });
+			let url = URL.createObjectURL(blob);
+			let anchor = document.createElement("a");
+			anchor.download = "simcir" + Date.now() + ".json";
+			anchor.href = url;
+			anchor.click();
+			URL.revokeObjectURL(url);
+			return;
+		});
+
+		$("#simcir-get-png").click( () => {
+			html2canvas(document.querySelector("#simcir_canvas")).then(canvas => { 
+				let downloadEle = document.createElement("a");
+				downloadEle.download = "simcir" + Date.now() + ".png";
+				downloadEle.href = canvas.toDataURL("image/png");
+				downloadEle.click();
+			});
+			return;
+		});
+	});
+	</script>
+
+	<title>論理回路エミュレータ</title>
+	</head>
+	<body>
+	<div class="simcir" id="simcir_canvas">
+	{
+		"width":1200,
+		"height":1000,
+		"showToolbox":true,
+		"toolbox":[
+			{"type":"DC"},
+			{"type":"Toggle"},
+			{"type":"LED"},
+			{"type":"AND"},
+			{"type":"OR"},
+			{"type":"NOT"},
+			{"type":"NAND"},
+			{"type":"NOR"},
+			{"type":"XOR"},
+			{"type":"XNOR"},
+			{"type":"HalfAdder"},
+			{"type":"FullAdder"},
+			{"type":"4bit7seg"}
+		],
+			"devices":[
+		],
+			"connectors":[
+		]
+	}
+	</div>
+	<p>読込：<input type="file" href="javascript:void(0)" id="simcir-set-json"></p>
+	<p>出力：<input type="button" value="　JSON形式で保存　" onclick="javascript:void(0)" id="simcir-get-json">
+			 <input type="button" value="　PNG形式で保存　" onclick="javascript:void(0)" id="simcir-get-png"></p>
+	</body>
+</html>
