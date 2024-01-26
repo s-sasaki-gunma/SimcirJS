@@ -20,21 +20,35 @@
 		};
 
 		let setup = function(data) {
-			$s.setupSimcir($simcir, $.extend(data));
+			let circuit = {};
+			$.each(JSON.parse(data), function(k, v) {
+				if (k == "width" || k == "height" || k == "toolbox" || k == "devices" || k == "connectors") {
+					circuit[k] = v;
+				}
+			});
+			$s.setupSimcir($simcir, $.extend(circuit));
 		};
+
+		$(function() {
+			let url = new URL(window.location.href);
+			const urlParams = url.searchParams.get('json');
+			if (urlParams != null) {
+				const decoded = atob(urlParams);
+				const bytes = Uint8Array.from({ length: decoded.length }, (element, index) => decoded.charCodeAt(index),);
+				const charCodes = new Uint16Array(bytes.buffer);
+				let jsonData = "";
+				charCodes.forEach((char) => { jsonData += String.fromCharCode(char); });
+				console.log(jsonData);
+				setup(jsonData);
+			}
+		});
 
 		$("#simcir-set-json").change( (event) => {
 			let file = event.target.files;
 			let reader = new FileReader();
 			reader.readAsText(file[0]);
 			reader.onload = function(ev){
-				let circuit = {};
-				$.each(JSON.parse(reader.result), function(k, v) {
-					if (k == "width" || k == "height" || k == "toolbox" || k == "devices" || k == "connectors") {
-						circuit[k] = v;
-					}
-				});
-				setup(circuit);
+				setup(reader.result);
 			}
 		});
 
@@ -60,6 +74,22 @@
 			});
 			return;
 		});
+
+		$("#simcir-get-url").click( () => {
+			let newData = getCircuitData();
+ 			console.log(newData);
+			const codeUnits = Uint16Array.from({length:newData.length},(element,index) => newData.charCodeAt(index),);
+			const charCodes = new Uint8Array(codeUnits.buffer);
+			let converted = "";
+ 			charCodes.forEach((char) => { converted += String.fromCharCode(char); });
+ 			const encoded = btoa(converted);
+ 			let url = new URL(window.location.href);
+ 			url.searchParams.set('json', encoded);
+ 			location.href = url;
+ 			console.log(encoded);
+			return;
+		});
+
 	});
 	</script>
 
@@ -96,6 +126,7 @@
 	<p>出力：
 		<input type="button" value="　JSON形式で保存　" onclick="javascript:void(0)" id="simcir-get-json">
 		<input type="button" value="　PNG形式で保存　" onclick="javascript:void(0)" id="simcir-get-png">
+		<input type="button" value="　URLを共有　" onclick="javascript:void(0)" id="simcir-get-url">
 	</p>
 	</body>
 </html>
